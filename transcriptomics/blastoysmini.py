@@ -7,10 +7,6 @@ import os
 import json
 import subprocess
 import sys
-from Bio.Alphabet import generic_dna
-from Bio.Seq import Seq
-from Bio.SeqRecord import SeqRecord
-from Bio import SeqIO
 
 def transrender(screen,transstrand,stranddex):
 	#Reset cursor and view position
