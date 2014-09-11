@@ -45,7 +45,7 @@ def transrender(screen,transstrand,stranddex):
 			if xindex == basedex: rcolor = 10
 			elif xindex in range(curstrand.kbegin,curstrand.kend): rcolor = 5
 			else: rcolor = 0
-			basechar = str(curstrand.transcript[xindex:xindex+1])
+			basechar = curstrand.transcript[xindex:xindex+1]
 			yblit = 5
 			if 'A' in basechar: screen.addstr(yblit,xblit,'A',curses.color_pair(rcolor+1))
 			elif 'C' in basechar: screen.addstr(yblit,xblit,'C',curses.color_pair(rcolor+2))
@@ -67,7 +67,7 @@ def transrender(screen,transstrand,stranddex):
 					if xindex<yalign: screen.addstr(yblit,xblit,'.',curses.color_pair(rcolor))
 					elif xindex>=yend: screen.addstr(yblit,xblit,'.',curses.color_pair(rcolor))
 					elif yalign<=xindex<yend:
-						basechar = str(yread[xindex-yalign:xindex-yalign+1])
+						basechar = yread[xindex-yalign:xindex-yalign+1]
 						if 'A' in basechar: screen.addstr(yblit,xblit,'A',curses.color_pair(rcolor+1))
 						elif 'C' in basechar: screen.addstr(yblit,xblit,'C',curses.color_pair(rcolor+2))
 						elif 'G' in basechar: screen.addstr(yblit,xblit,'G',curses.color_pair(rcolor+3))
@@ -140,7 +140,7 @@ def transrender(screen,transstrand,stranddex):
 					yalign = curstrand.aligns[o]
 					yend = curstrand.ends[o]
 					if yalign<=n<yend:
-						basechar = str(yread[n-yalign:n-yalign+1])
+						basechar = yread[n-yalign:n-yalign+1]
 						if basechar in 'A': ctA +=1
 						elif basechar in 'C': ctC +=1
 						elif basechar in 'G': ctG +=1
@@ -151,7 +151,7 @@ def transrender(screen,transstrand,stranddex):
 				elif maxN == ctG and max([ctA-maxN,ctC-maxN,ctT-maxN]) <= 0-curstrand.mindepth: newtranscript += 'G'
 				elif maxN == ctT and max([ctA-maxN,ctC-maxN,ctG-maxN]) <= 0-curstrand.mindepth: newtranscript += 'T'
 				else: newtranscript += 'n'
-			curstrand.transcript=Seq(newtranscript,generic_dna)
+			curstrand.transcript=newtranscript
 		elif y == ord('m'):
 			depths = [1,2,3,4,5,10]
 			curstrand.mindepth = depths[depths.index(curstrand.mindepth)-1]
@@ -165,9 +165,9 @@ class BLASToys:
 		# must have single line fastas to work - no n60 splitting; otherwise, can't use grep for max speed
 		with open(temppath + '/temp','w') as tempfile:
 			if rcbool == True:
-				grep = subprocess.Popen(['grep', '-B1', revcom(searchseed), filepath],stdout=tempfile)
+				grep = subprocess.Popen(['grep', '-F', '-B1', revcom(searchseed), filepath],stdout=tempfile)
 			else:
-				grep = subprocess.Popen(['grep', '-B1', searchseed, filepath],stdout=tempfile)
+				grep = subprocess.Popen(['grep', '-F', '-B1', searchseed, filepath],stdout=tempfile)
 			grep.wait()
 			tempfile.flush()
 		with open(temppath + '/temp','r') as tempfile:
