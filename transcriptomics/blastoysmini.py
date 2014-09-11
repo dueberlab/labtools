@@ -169,9 +169,9 @@ class BLASToys:
 		# must have single line fastas to work - no n60 splitting; otherwise, can't use grep for max speed
 		with open(temppath + '/temp','w') as tempfile:
 			if revcom == True:
-				grep = subprocess.Popen(['grep', '-B1', str(searchseed.reverse_complement()), filepath],stdout=tempfile)
+				grep = subprocess.Popen(['grep', '-B1', revcom(searchseed), filepath],stdout=tempfile)
 			else:
-				grep = subprocess.Popen(['grep', '-B1', str(searchseed), filepath],stdout=tempfile)
+				grep = subprocess.Popen(['grep', '-B1', searchseed, filepath],stdout=tempfile)
 			grep.wait()
 			tempfile.flush()
 		with open(temppath + '/temp','r') as tempfile:
@@ -182,8 +182,8 @@ class BLASToys:
 				line2=line.rstrip('\n')
 				if ">" in line1:
 					seqid = line1[1:]
-					if revcom == True: seqread = Seq(line2,generic_dna).reverse_complement()
-					else: seqread = Seq(line2,generic_dna)
+					if revcom == True: seqread = revcom(line2)
+					else: seqread = line2
 					if seqid not in self.ids:
 						aln2 = seqread.find(searchseed)
 						self.reads.append(seqread)
@@ -199,7 +199,7 @@ class BLASToys:
 			intermediary = readfile.readline().rstrip()
 			self.parampack = json.loads(intermediary)
 			intermediary = readfile.readline().rstrip() 
-			self.transcript = Seq(json.loads(intermediary),generic_dna)
+			self.transcript = json.loads(intermediary)
 			intermediary = readfile.readline().rstrip() 
 			self.aligns = json.loads(intermediary)
 			intermediary = readfile.readline().rstrip() 
@@ -207,20 +207,15 @@ class BLASToys:
 			intermediary = readfile.readline().rstrip() 
 			self.ids = json.loads(intermediary)
 			intermediary = readfile.readline().rstrip() 
-			self.readsstr = json.loads(intermediary)
+			self.reads = json.loads(intermediary)
 		self.name,self.mindepth,self.kbegin,self.kwidth,self.kend,self.status = self.parampack
-		for n in range(0,len(self.readsstr)):
-			self.reads.append(Seq(self.readsstr[n],generic_dna))
 
 	def save(self,savefile):
-		self.readsstr = []
 		self.parampack = [self.name,self.mindepth,self.kbegin,self.kwidth,self.kend,self.status]
-		for n in range(0,len(self.reads)):
-			self.readsstr.append(str(self.reads[n]))
 		with open(savefile,'w') as writefile:
 			json.dump(self.parampack,writefile)
 			writefile.write('\n')
-			json.dump(str(self.transcript),writefile)
+			json.dump(self.transcript,writefile)
 			writefile.write('\n')
 			json.dump(self.aligns,writefile)
 			writefile.write('\n')
@@ -228,7 +223,7 @@ class BLASToys:
 			writefile.write('\n')
 			json.dump(self.ids,writefile)
 			writefile.write('\n')
-			json.dump(self.readsstr,writefile)
+			json.dump(self.reads,writefile)
 
 	def seed(self,seed,tname):
 		self.mindepth = 5
@@ -236,7 +231,7 @@ class BLASToys:
 		self.kwidth = 20
 		self.kend = 21
 		self.name = tname
-		self.transcript = Seq(seed,generic_dna)
+		self.transcript = seed
 
 	def __init__(self):
 		self.mindepth = 1
@@ -244,7 +239,7 @@ class BLASToys:
 		self.kwidth = 20
 		self.kend = 21
 		self.name = ''
-		self.transcript = Seq('A',generic_dna)
+		self.transcript = ''
 		self.status = 1
 		self.reads = []
 		self.ids = []
@@ -258,6 +253,17 @@ def get_param(prompt_string,screen):
 	screen.refresh()
 	input = screen.getstr(10, 10, 60)
 	return input
+
+def revcom(inputstr):
+	reverse_complement = '' # A reverse compliment is an insult :D
+	for n in range(0,len(inputstr)):
+		singlechar = inputstr[n:n+1]
+		if singlechar == 'A': reverse_complement = 'T' + reverse_complement
+		elif singlechar == 'C': reverse_complement = 'G' + reverse_complement
+		elif singlechar == 'G': reverse_complement = 'C' + reverse_complement
+		elif singlechar == 'T': reverse_complement = 'A' + reverse_complement
+		else: reverse_complement = 'N' + reverse_complement
+	return reverse_complement
 
 def main(screen,args):
 	#								0 WHITE BLACK (n, UNSELECTED)
@@ -331,11 +337,16 @@ def main(screen,args):
 			screen.refresh()
 			strandlist = []
 			txnum = 0
+			line1 = ''
+			line2 = ''
 			with open(args.seedpath,'r') as seedfile:
-				for record in SeqIO.parse(seedfile,'fasta'):
-					strandlist.append(BLASToys())
-					txnum += 1
-					strandlist[-1].seed(str(record.seq),str(txnum)+'_'+record.id)
+				for line in seedfile:
+					line1=line2
+					line2=line.rstrip('\n')
+					if ">" in line1:
+						strandlist.append(BLASToys())
+						txnum += 1
+						strandlist[-1].seed(line2,str(txnum)+'_'+line1[1:])
 		elif x == ord('2'):
 #			runlist = get_param("Run the following:" ,screen)
 			screen.clear()
@@ -359,7 +370,7 @@ def main(screen,args):
 					if txfound > 0:
 						if min(strandlist[p].aligns) < 0 :
 							padsize = abs(min(strandlist[p].aligns))
-							strandlist[p].transcript = Seq('n'*padsize+str(strandlist[p].transcript),generic_dna)
+							strandlist[p].transcript = 'n'*padsize+strandlist[p].transcript
 							strandlist[p].kbegin += padsize
 							strandlist[p].kend += padsize
 							for n in range(0,len(strandlist[p].reads)):
@@ -367,7 +378,7 @@ def main(screen,args):
 								strandlist[p].ends[n] += padsize
 						if max(strandlist[p].ends) > len(strandlist[p].transcript):
 							padsize = max(strandlist[p].ends) - len(strandlist[p].transcript)
-							strandlist[p].transcript = Seq(str(strandlist[p].transcript)+'n'*padsize,generic_dna)
+							strandlist[p].transcript = strandlist[p].transcript)+'n'*padsize
 			screen.getch()
 		elif x == ord('3'):
 			screen.clear()
@@ -397,7 +408,8 @@ def main(screen,args):
 		elif x == ord('6'): #print
 			with open(args.printpath,'w') as printfile:
 				for p in range(0,len(strandlist)):
-					SeqIO.write(SeqRecord(strandlist[p].transcript,id=strandlist[p].name,name='',description=''),printfile,'fasta')
+					printfile.write('>'+ strandlist[p].name + '\n')
+					printfile.write(strandlist[p].transcript + '\n')
 		elif x == ord('7'): #set extendonly
 			extendonly = 0			
 	curses.endwin()
