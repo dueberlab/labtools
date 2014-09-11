@@ -158,13 +158,13 @@ def transrender(screen,transstrand,stranddex):
 	return stranddex
 
 class BLASToys:
-	def transextend(self, filepath, temppath, revcom):
+	def transextend(self, filepath, temppath, rcbool):
 		searchseed = self.transcript[self.kbegin:self.kend]
 		aln1 = self.transcript.find(searchseed)
 		txfound = 0
 		# must have single line fastas to work - no n60 splitting; otherwise, can't use grep for max speed
 		with open(temppath + '/temp','w') as tempfile:
-			if revcom == True:
+			if rcbool == True:
 				grep = subprocess.Popen(['grep', '-B1', revcom(searchseed), filepath],stdout=tempfile)
 			else:
 				grep = subprocess.Popen(['grep', '-B1', searchseed, filepath],stdout=tempfile)
@@ -178,7 +178,7 @@ class BLASToys:
 				line2=line.rstrip('\n')
 				if ">" in line1:
 					seqid = line1[1:]
-					if revcom == True: seqread = revcom(line2)
+					if rcbool == True: seqread = revcom(line2)
 					else: seqread = line2
 					if seqid not in self.ids:
 						aln2 = seqread.find(searchseed)
@@ -374,7 +374,7 @@ def main(screen,args):
 								strandlist[p].ends[n] += padsize
 						if max(strandlist[p].ends) > len(strandlist[p].transcript):
 							padsize = max(strandlist[p].ends) - len(strandlist[p].transcript)
-							strandlist[p].transcript = strandlist[p].transcript)+'n'*padsize
+							strandlist[p].transcript = strandlist[p].transcript+'n'*padsize
 			screen.getch()
 		elif x == ord('3'):
 			screen.clear()
